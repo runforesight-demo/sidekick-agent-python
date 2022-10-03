@@ -1,0 +1,42 @@
+name: Synchronization Upstream
+
+on:
+  schedule:
+    - cron: "0 1 * * *" # every day at 1:00
+  workflow_dispatch:
+
+env:
+  UPSTREAM: "https://github.com/runsidekick/sidekick-agent-python"
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  UPSTREAM_BRANCH_NAME: master
+  BRANCH_NAME: master
+  ORIGIN_PATH: runforesight-demo/sidekick-agent-python
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  GITHUB_USERNAME: runforesight-demo
+
+jobs:
+  merge_upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - name: Sync and merge upstream repository with your current repository
+        run: |
+          git config --global user.name ${{ env.GITHUB_USERNAME }}
+          git config --global user.email ${{ env.GITHUB_USERNAME }}@users.noreply.github.com
+          git config pull.rebase true
+
+          git remote add upstream ${{ env.UPSTREAM }}
+          # git fetch upstream ${{ env.UPSTREAM_BRANCH_NAME }}:${{ env.BRANCH_NAME }}
+
+          git pull upstream ${{ env.UPSTREAM_BRANCH_NAME }}
+
+          git checkout ${{ env.BRANCH_NAME }}
+          
+          git remote set-url origin "https://x-access-token:${{ env.GITHUB_TOKEN }}@github.com/${{ env.ORIGIN_PATH }}"
+          git commit -am "Merge upstream" || true
+          git push -f -u origin ${{ env.BRANCH_NAME }}
